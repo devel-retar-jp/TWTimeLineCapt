@@ -22,6 +22,7 @@ using CoreTweet;                                       //追加してくださ�
 using CoreTweet.Core;
 using NMeCab;                                          //追加してください。（NMeCabNetStandard・Nugetからパッケージを取得）                                        
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Runtime.Serialization.Json;
 
 /// <summary>
 ///  メイン
@@ -156,7 +157,26 @@ namespace TWTimeLineCapt
             ///SG読み込み
             string sgFileName = Constants.sgFileNameDefault;
             if (args.Length > 0) { sgFileName = args[0]; }
-            SG_JSON sgjson = ReadJson(sgFileName);
+            //ファイルの存在チェック
+            SG_JSON sgjson = new SG_JSON();
+            if (System.IO.File.Exists(sgFileName))
+            {
+                sgjson = ReadJson(sgFileName);
+
+                ////シリアライザ
+                //DataContractJsonSerializer sgjs = new DataContractJsonSerializer(typeof(SG_JSON));
+                ////ファイルストリーム・オープン
+                //FileStream sgfs = new FileStream(sgFileName, FileMode.Open);
+                ////JSONオブジェクトに設定
+                //sgjson = (SG_JSON)sgjs.ReadObject(sgfs);
+                ////ファイルストリーム・クローズ
+                //sgfs.Close();
+            }
+            else
+            {
+                MessageBox.Show("'" + sgFileName + "'がありません。終了");
+                Environment.Exit(0);    //異常終了
+            }
 
             ///IDをTwitterから取得/書き込み   GET friends/ids / GET followers/ids
             List<long> twUserIds = new List<long>();
@@ -1072,10 +1092,13 @@ namespace TWTimeLineCapt
             {
                 using (StreamReader reader = new StreamReader(f, Encoding.Unicode))
                 {
+                    List<string> mlb = new List<string>();
                     while (reader.EndOfStream == false)
                     {
-                        mergeList.Add(long.Parse(reader.ReadLine()));
+                        mlb.Add(reader.ReadLine());
+                        //mergeList.Add(long.Parse(reader.ReadLine()));
                     }
+                    mergeList.AddRange(mlb.Distinct().OrderBy(x => x).ToList());    //Bug Fix 2019/11/11
                 }
             }
             List<long> clistbef = new List<long>(mergeList);
